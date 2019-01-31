@@ -176,11 +176,12 @@ L:
 		}
 		if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
 			ilog.Errorf(
-				"Tx %v is expired, tx time is %v, tx expiration time is %v, blk time is %v",
+				"Tx %v is expired, tx time is %v, tx expiration time is %v, blk time is %v. tx=%+v",
 				common.Base58Encode(t.Hash()),
 				t.Time,
 				t.Expiration,
 				blk.Head.Time,
+				*t,
 			)
 			provider.Drop(t, ErrExpiredTx)
 			continue L
