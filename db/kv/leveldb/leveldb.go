@@ -17,7 +17,7 @@ type DB struct {
 
 // NewDB return new leveldb
 func NewDB(path string) (*DB, error) {
-	o := &opt.Options{BlockCacheCapacity: 1 * opt.GiB}
+	o := &opt.Options{BlockCacheCapacity: 2 * opt.GiB}
 	db, err := leveldb.OpenFile(path, o)
 	if err != nil {
 		return nil, err
