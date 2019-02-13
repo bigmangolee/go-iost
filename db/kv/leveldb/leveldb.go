@@ -5,6 +5,7 @@ import (
 
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -16,7 +17,8 @@ type DB struct {
 
 // NewDB return new leveldb
 func NewDB(path string) (*DB, error) {
-	db, err := leveldb.OpenFile(path, nil)
+	o := &opt.Options{BlockCacheCapacity: 1 * opt.GiB}
+	db, err := leveldb.OpenFile(path, o)
 	if err != nil {
 		return nil, err
 	}
