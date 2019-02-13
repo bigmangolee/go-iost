@@ -705,6 +705,10 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 	case RoutingTableResponse:
 		go pm.handleRoutingTableResponse(msg)
 	default:
+		if msg.messageType() == NewBlockRequest || msg.messageType() == SyncBlockHashRequest ||
+			msg.messageType() == SyncBlockRequest {
+			return
+		}
 		inMsg := NewIncomingMessage(peerID, data, msg.messageType())
 		if m, exist := pm.subs.Load(msg.messageType()); exist {
 			m.(*sync.Map).Range(func(k, v interface{}) bool {
