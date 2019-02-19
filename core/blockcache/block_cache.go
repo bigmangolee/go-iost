@@ -423,7 +423,10 @@ func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
 
 func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 	var bcMessage BcMessage
-	proto.Unmarshal(entry.Data, &bcMessage)
+	err = proto.Unmarshal(entry.Data, &bcMessage)
+	if err != nil {
+		ilog.Errorf("pb decode failed. err=%v", err)
+	}
 	switch bcMessage.Type {
 	case BcMessageType_LinkType:
 		err = bc.applyLink(bcMessage.Data, p)
@@ -437,8 +440,10 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 			return
 		}
 	case BcMessageType_UpdateLinkedRootWitnessType:
+		ilog.Info("apply linkedroot witness")
 		err = bc.applyUpdateLinkedRootWitness(bcMessage.Data)
 		if err != nil {
+			ilog.Errorf("update linkedroot witness failed. err=%v", err)
 			return
 		}
 	}
@@ -471,6 +476,7 @@ func (bc *BlockCacheImpl) applyUpdateActive(b []byte) (err error) {
 
 func (bc *BlockCacheImpl) applyUpdateLinkedRootWitness(b []byte) (err error) {
 	blockHeadHash, wl, err := decodeUpdateLinkedRootWitness(b)
+	ilog.Infof(common.Base58Encode(blockHeadHash), common.Base58Encode(bc.LinkedRoot().HeadHash()))
 	if bytes.Equal(blockHeadHash, bc.LinkedRoot().HeadHash()) {
 		bc.linkedRootWitness = wl
 		ilog.Infof("Set linkedRootWitness to :%v", bc.linkedRootWitness)
