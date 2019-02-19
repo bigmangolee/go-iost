@@ -482,6 +482,8 @@ func (bc *BlockCacheImpl) applyUpdateLinkedRootWitness(b []byte) (err error) {
 func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 	confirmLimit := int(bc.witnessNum*2/3 + 1)
 
+	ilog.Infof("node.ValidWitness: %v", node.ValidWitness)
+	ilog.Infof("bc.linkedRootWitness: %v", bc.linkedRootWitness)
 	updateActive := false
 	if len(node.ValidWitness) >= confirmLimit {
 		bc.updateLib(node, confirmLimit)
