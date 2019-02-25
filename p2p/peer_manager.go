@@ -250,7 +250,7 @@ func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 		s.Conn().Close()
 		return
 	}
-	ilog.Debugf("handle new stream. pid=%s, addr=%v, direction=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr(), direction)
+	ilog.Infof("handle new stream. pid=%s, addr=%v, direction=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr(), direction)
 
 	peer := pm.GetNeighbor(remotePID)
 	if peer != nil {
@@ -512,6 +512,7 @@ func (pm *PeerManager) routingQuery(ids []string) {
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 	perm := r.Perm(len(allPeerIDs))
 
+	ilog.Infof("start connecting %d", len(allPeerIDs))
 	for i, t := 0, 0; i < len(perm) && t < pm.neighborCap[outbound]-outboundNeighborCount; i++ {
 		peerID := allPeerIDs[perm[i]]
 		if peerID == pm.host.ID() {
@@ -520,7 +521,7 @@ func (pm *PeerManager) routingQuery(ids []string) {
 		if pm.GetNeighbor(peerID) != nil {
 			continue
 		}
-		ilog.Debugf("dial peer: pid=%v", peerID.Pretty())
+		ilog.Infof("dial peer: pid=%v", peerID.Pretty())
 		stream, err := pm.newStream(peerID)
 		if err != nil {
 			ilog.Warnf("create stream failed. pid=%s, err=%v", peerID.Pretty(), err)
