@@ -138,6 +138,7 @@ func (pm *PeerManager) Start() {
 	pm.LoadRoutingTable()
 	pm.routingQuery([]string{pm.host.ID().Pretty()})
 
+	ilog.Infof("routing size: %v, peer store: %v", pm.routingTable.Size(), len(pm.peerStore.Peers()))
 	for _, p := range pm.routingTable.ListPeers() {
 		for _, addr := range pm.peerStore.Addrs(p) {
 			ilog.Infof("pid:%v addr:%v", p.Pretty(), addr.String())
@@ -475,6 +476,7 @@ func (pm *PeerManager) LoadRoutingTable() {
 			continue
 		}
 		if !isPublicMa(line) {
+			ilog.Infof("not public ma %v", line)
 			continue
 		}
 		peerID, addr, err := parseMultiaddr(line[:len(line)-1])
