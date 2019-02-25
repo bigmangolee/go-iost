@@ -79,7 +79,7 @@ func (as *adminServer) ClosePeer(rw http.ResponseWriter, r *http.Request) {
 		rw.Write([]byte("invalid peer id"))
 		return
 	}
-	as.pm.RemoveNeighbor(peerID)
+	as.pm.RemoveNeighbor(peerID, false)
 	rw.Write([]byte("ok"))
 }
 

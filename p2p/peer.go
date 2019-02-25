@@ -115,7 +115,7 @@ func (p *Peer) write(m *p2pMessage) error {
 	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+3) * time.Second)
 	if err := p.stream.SetWriteDeadline(deadline); err != nil {
 		ilog.Warnf("setting write deadline failed. err=%v, pid=%v", err, p.ID())
-		p.peerManager.RemoveNeighbor(p.id)
+		p.peerManager.RemoveNeighbor(p.id, false)
 		return err
 	}
 	_, err := p.stream.Write(m.content())
@@ -125,10 +125,10 @@ func (p *Peer) write(m *p2pMessage) error {
 			p.continuousTimeout++
 			if p.continuousTimeout >= maxContinuousTimeout {
 				ilog.Warnf("max continuous timeout times, remove peer %v", p.ID())
-				p.peerManager.RemoveNeighbor(p.id)
+				p.peerManager.RemoveNeighbor(p.id, false)
 			}
 		} else {
-			p.peerManager.RemoveNeighbor(p.id)
+			p.peerManager.RemoveNeighbor(p.id, false)
 		}
 		return err
 	}
@@ -176,7 +176,8 @@ func (p *Peer) readLoop() {
 		chainID := binary.BigEndian.Uint32(header[chainIDBegin:chainIDEnd])
 		if chainID != p.peerManager.config.ChainID {
 			ilog.Warnf("mismatched chainID. chainID=%d", chainID)
-			break
+			p.peerManager.RemoveNeighbor(p.id, true)
+			return
 		}
 		length := binary.BigEndian.Uint32(header[dataLengthBegin:dataLengthEnd])
 		if length > maxDataLength {
@@ -201,7 +202,7 @@ func (p *Peer) readLoop() {
 		p.handleMessage(msg)
 	}
 
-	p.peerManager.RemoveNeighbor(p.id)
+	p.peerManager.RemoveNeighbor(p.id, false)
 }
 
 // SendMessage puts message into the corresponding channel.

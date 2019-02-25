@@ -138,6 +138,12 @@ func (pm *PeerManager) Start() {
 	pm.LoadRoutingTable()
 	pm.routingQuery([]string{pm.host.ID().Pretty()})
 
+	for _, p := range pm.routingTable.ListPeers() {
+		for _, addr := range pm.peerStore.Addrs(p) {
+			ilog.Infof("pid:%v addr:%v", p.Pretty(), addr.String())
+		}
+	}
+
 	pm.wg.Add(4)
 	go pm.dumpRoutingTableLoop()
 	go pm.syncRoutingTableLoop()
@@ -296,7 +302,6 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 		case <-pm.quitCh:
 			return
 		case <-time.After(syncRoutingTableInterval):
-			//ilog.Debugf("start sync routing table.")
 			_, pubkey, err := crypto.GenerateEd25519Key(cryrand.Reader)
 			if err != nil {
 				ilog.Errorf("Generating ed25519 keypair failed. err=%v", err)
@@ -307,6 +312,7 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 				ilog.Errorf("Converting ed25519 pubkey to ID failed. err=%v", err)
 				continue
 			}
+			ilog.Debugf("Sync routing table. queryPID=%v", randomPid.Pretty())
 			pm.routingQuery([]string{randomPid.Pretty()})
 		}
 	}
@@ -357,7 +363,7 @@ func (pm *PeerManager) AddNeighbor(p *Peer) {
 }
 
 // RemoveNeighbor stops a peer and removes it from the neighbor list.
-func (pm *PeerManager) RemoveNeighbor(peerID peer.ID) {
+func (pm *PeerManager) RemoveNeighbor(peerID peer.ID, delRouting bool) {
 
 	pm.neighborMutex.Lock()
 	defer pm.neighborMutex.Unlock()
@@ -367,6 +373,9 @@ func (pm *PeerManager) RemoveNeighbor(peerID peer.ID) {
 		p.Stop()
 		delete(pm.neighbors, peerID)
 		pm.neighborCount[p.direction]--
+	}
+	if delRouting {
+		pm.deletePeerInfo(peerID)
 	}
 }
 
@@ -465,6 +474,9 @@ func (pm *PeerManager) LoadRoutingTable() {
 		if len(line) == 0 || strings.HasPrefix(line, "#") {
 			continue
 		}
+		if !isPublicMa(line) {
+			continue
+		}
 		peerID, addr, err := parseMultiaddr(line[:len(line)-1])
 		if err != nil {
 			ilog.Warnf("parse multiaddr failed. err=%v, str=%v", err, line)
@@ -510,6 +522,11 @@ func (pm *PeerManager) routingQuery(ids []string) {
 		stream, err := pm.newStream(peerID)
 		if err != nil {
 			ilog.Warnf("create stream failed. pid=%s, err=%v", peerID.Pretty(), err)
+			// peerID and ip are not match
+			if strings.Index(err.Error(), "connected to wrong peer") > -1 {
+				pm.deletePeerInfo(peerID)
+				continue
+			}
 			pm.recordDialFail(peerID)
 			if pm.isDead(peerID) {
 				pm.deletePeerInfo(peerID)
@@ -612,14 +629,12 @@ func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
 	for _, queryID := range queryIDs {
 		pid, err := peer.IDB58Decode(queryID)
 		if err != nil {
-			ilog.Warnf("decode peerID failed. err=%v, id=%v", err, queryID)
+			ilog.Warnf("Decode peerID failed. err=%v, id=%v", err, queryID)
 			continue
 		}
 		peerIDs := pm.routingTable.NearestPeers(kbucket.ConvertPeerID(pid), peerResponseCount)
 		for _, id := range peerIDs {
-			if !pm.isDead(id) {
-				pidSet[id] = struct{}{}
-			}
+			pidSet[id] = struct{}{}
 		}
 	}
 
@@ -641,7 +656,7 @@ func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
 	}
 	bytes, err := proto.Marshal(resp)
 	if err != nil {
-		ilog.Errorf("pb encode failed. err=%v, obj=%+v", err, resp)
+		ilog.Errorf("Encoding pb failed. err=%v, obj=%+v", err, resp)
 		return nil, err
 	}
 	return bytes, nil
@@ -674,25 +689,29 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 	resp := &p2pb.RoutingResponse{}
 	err := proto.Unmarshal(data, resp)
 	if err != nil {
-		ilog.Errorf("pb decode failed. err=%v, bytes=%v", err, data)
+		ilog.Errorf("Decoding pb failed. err=%v, bytes=%v", err, data)
 		return
 	}
-	ilog.Debugf("receiving peer infos: %v", resp)
+	ilog.Debugf("Receiving peer infos: %v", resp)
 	for _, peerInfo := range resp.Peers {
 		if len(peerInfo.Addrs) > 0 {
 			pid, err := peer.IDB58Decode(peerInfo.Id)
 			if err != nil {
-				ilog.Warnf("decode peerID failed. err=%v, id=%v", err, peerInfo.Id)
+				ilog.Warnf("Decoding peerID failed. err=%v, id=%v", err, peerInfo.Id)
 				continue
 			}
 			if pm.isDead(pid) {
+				ilog.Debugf("Rejecting dead peerID: %v", pid.Pretty())
 				continue
 			}
 			maddrs := make([]multiaddr.Multiaddr, 0, len(peerInfo.Addrs))
 			for _, addr := range peerInfo.Addrs {
+				if !isPublicMa(addr) {
+					continue
+				}
 				a, err := multiaddr.NewMultiaddr(addr)
 				if err != nil {
-					ilog.Warnf("parse multiaddr failed. err=%v, addr=%v", err, addr)
+					ilog.Warnf("Parsing multiaddr failed. err=%v, addr=%v", err, addr)
 					continue
 				}
 				maddrs = append(maddrs, a)
@@ -778,7 +797,7 @@ func (pm *PeerManager) PutPeerToBlack(id string) {
 		ilog.Warnf("decode peerID failed. err=%v, id=%v", err, id)
 		return
 	}
-	pm.RemoveNeighbor(pid)
+	pm.RemoveNeighbor(pid, false)
 	pm.PutPIDToBlack(pid)
 }
 
