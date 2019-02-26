@@ -93,6 +93,7 @@ type PeerManager struct {
 	rtMutex    sync.RWMutex
 
 	queryHistory map[string]int
+	storedHis    map[string]int
 	qhRW         sync.RWMutex
 }
 
@@ -114,6 +115,7 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 		blackIPs:      make(map[string]bool),
 		retryTimes:    make(map[string]int),
 		queryHistory:  make(map[string]int),
+		storedHis:     make(map[string]int),
 	}
 	if config.InboundConn <= 0 {
 		pm.neighborCap[inbound] = defaultOutboundConn
@@ -735,12 +737,15 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 				maddrs = append(maddrs, a)
 			}
 			if len(maddrs) > 0 {
+				pm.qhRW.Lock()
+				pm.storedHis[pid.Pretty()] = 1
+				pm.qhRW.Unlock()
 				pm.storePeerInfo(pid, maddrs)
 			}
 		}
 	}
 	pm.qhRW.RLock()
-	ilog.Infof("received len %d, routingSize:%d", len(pm.queryHistory), pm.routingTable.Size())
+	ilog.Infof("received len %d, routingSize:%d, storedLen: %d", len(pm.queryHistory), pm.routingTable.Size(), len(pm.storedHis))
 	pm.qhRW.RUnlock()
 }
 
