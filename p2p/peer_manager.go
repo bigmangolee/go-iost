@@ -16,10 +16,12 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
 	p2pb "github.com/iost-official/go-iost/p2p/pb"
+	util "github.com/ipfs/go-ipfs-util"
 
 	crypto "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
 	kbucket "github.com/libp2p/go-libp2p-kbucket"
+	"github.com/libp2p/go-libp2p-kbucket/keyspace"
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
@@ -100,6 +102,13 @@ type PeerManager struct {
 // NewPeerManager returns a new instance of PeerManager struct.
 func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 	routingTable := kbucket.NewRoutingTable(bucketSize, kbucket.ConvertPeerID(host.ID()), time.Second, host.Peerstore())
+	routingTable.PeerAdded = func(id peer.ID) {
+		ilog.Infof("peer added %v", id.Pretty())
+	}
+	routingTable.PeerRemoved = func(id peer.ID) {
+		ilog.Infof("peer remove %v", id.Pretty())
+	}
+
 	pm := &PeerManager{
 		neighbors:     make(map[peer.ID]*Peer),
 		neighborCount: make(map[connDirection]int),
@@ -719,6 +728,8 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 				ilog.Warnf("Decoding peerID failed. err=%v, id=%v", err, peerInfo.Id)
 				continue
 			}
+			l := keyspace.ZeroPrefixLen(util.XOR(kbucket.ConvertPeerID(pm.host.ID()), kbucket.ConvertPeerID(pid)))
+			ilog.Infof("common prefix len %v, pid=%v", l, pid.Pretty())
 			if pm.isDead(pid) {
 				ilog.Debugf("Rejecting dead peerID: %v", pid.Pretty())
 				continue
