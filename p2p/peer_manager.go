@@ -728,7 +728,11 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 				ilog.Warnf("Decoding peerID failed. err=%v, id=%v", err, peerInfo.Id)
 				continue
 			}
-			l := keyspace.ZeroPrefixLen(util.XOR(kbucket.ConvertPeerID(pm.host.ID()), kbucket.ConvertPeerID(pid)))
+			a := kbucket.ConvertPeerID(pm.host.ID())
+			b := kbucket.ConvertPeerID(pid)
+			fmt.Printf("%v, %b", a, a)
+			fmt.Printf("%v, %b", b, b)
+			l := keyspace.ZeroPrefixLen(util.XOR(a, b))
 			ilog.Infof("common prefix len %v, pid=%v", l, pid.Pretty())
 			if pm.isDead(pid) {
 				ilog.Debugf("Rejecting dead peerID: %v", pid.Pretty())
