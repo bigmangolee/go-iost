@@ -627,6 +627,7 @@ func (pm *PeerManager) Deregister(id string, mTyps ...MessageType) {
 }
 
 func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
+	ilog.Infof("get routing response. pids=%v", peerIDs)
 	queryIDs := peerIDs
 	if len(queryIDs) > maxPeerQuery {
 		queryIDs = queryIDs[:maxPeerQuery]
@@ -640,6 +641,7 @@ func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
 			continue
 		}
 		peerIDs := pm.routingTable.NearestPeers(kbucket.ConvertPeerID(pid), peerResponseCount)
+		ilog.Errorf("rawpid=%v, querypid=%v, responsepid=%v", queryID, pid.Pretty(), peerIDs)
 		for _, id := range peerIDs {
 			pidSet[id] = struct{}{}
 		}
