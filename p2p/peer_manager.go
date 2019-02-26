@@ -714,8 +714,10 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 			maddrs := make([]multiaddr.Multiaddr, 0, len(peerInfo.Addrs))
 			for _, addr := range peerInfo.Addrs {
 				if !isPublicMa(addr) {
+					ilog.Infof("Receive private ma %v", addr)
 					continue
 				}
+				ilog.Infof("Add addr %v", addr)
 				a, err := multiaddr.NewMultiaddr(addr)
 				if err != nil {
 					ilog.Warnf("Parsing multiaddr failed. err=%v, addr=%v", err, addr)

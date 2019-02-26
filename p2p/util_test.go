@@ -28,6 +28,7 @@ func TestGetIPFromMa(t *testing.T) {
 		input  string
 	}{
 		{"127.0.0.1", "/ip4/127.0.0.1/tcp/1111/ipfs/Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM"},
+		{"172.17.0.2", "/ip4/127.0.0.1/tcp/1111/ipfs/Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM"},
 		{"56.12.32.32", "/ip4/56.12.32.32/tcp/1111/ipfs/Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM"},
 		{"", "/ip4/256.12.32.32/tcp/1111/ipfs/Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM"},
 		{"", "/ip4/56.12.32.321/tcp/1111/ipfs/Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM"},
@@ -60,6 +61,7 @@ func TestIsPublicMa(t *testing.T) {
 		expect bool
 	}{
 		{"/ip4/127.0.0.1/tcp/1111/ipfs/Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM", false},
+		{"/ip4/172.17.0.2/tcp/1111/ipfs/Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM", false},
 		{"/ip4/10.3.2.1/tcp/1111/ipfs/Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM", false},
 		{"/ip4/56.12.32.32/tcp/1111/ipfs/Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM", true},
 		{"/ip4/256.12.32.32/tcp/1111/ipfs/Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM", false},
