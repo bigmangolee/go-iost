@@ -746,6 +746,10 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 	}
 	pm.qhRW.RLock()
 	ilog.Infof("received len %d, routingSize:%d, storedLen: %d", len(pm.queryHistory), pm.routingTable.Size(), len(pm.storedHis))
+	ilog.Infof("buckets num: %d", len(pm.routingTable.Buckets))
+	for i, b := range pm.routingTable.Buckets {
+		ilog.Infof("buck %d, len %d", i, b.Len())
+	}
 	pm.qhRW.RUnlock()
 }
 
