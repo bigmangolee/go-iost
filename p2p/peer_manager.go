@@ -717,7 +717,6 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 					ilog.Infof("Receive private ma %v", addr)
 					continue
 				}
-				ilog.Infof("Add addr %v", addr)
 				a, err := multiaddr.NewMultiaddr(addr)
 				if err != nil {
 					ilog.Warnf("Parsing multiaddr failed. err=%v, addr=%v", err, addr)

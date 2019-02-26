@@ -175,7 +175,7 @@ func (p *Peer) readLoop() {
 		}
 		chainID := binary.BigEndian.Uint32(header[chainIDBegin:chainIDEnd])
 		if chainID != p.peerManager.config.ChainID {
-			ilog.Warnf("mismatched chainID. chainID=%d", chainID)
+			ilog.Warnf("mismatched chainID. chainID=%d, remotePeer=%v", chainID, p.ID())
 			p.peerManager.RemoveNeighbor(p.id, true)
 			return
 		}
