@@ -92,7 +92,7 @@ type PeerManager struct {
 	retryTimes map[string]int
 	rtMutex    sync.RWMutex
 
-	queryHistory map[string]string
+	queryHistory map[string]int
 }
 
 // NewPeerManager returns a new instance of PeerManager struct.
@@ -112,7 +112,7 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 		blackPIDs:     make(map[string]bool),
 		blackIPs:      make(map[string]bool),
 		retryTimes:    make(map[string]int),
-		queryHistory:  make(map[string]string),
+		queryHistory:  make(map[string]int),
 	}
 	if config.InboundConn <= 0 {
 		pm.neighborCap[inbound] = defaultOutboundConn
@@ -544,7 +544,6 @@ func (pm *PeerManager) routingQuery(ids []string) {
 			continue
 		}
 		pm.HandleStream(stream, outbound)
-		pm.queryHistory[peerID.Pretty()] = ids[0]
 		pm.SendToPeer(peerID, bytes, RoutingTableQuery, UrgentMessage)
 		t++
 	}
@@ -708,6 +707,7 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 	ilog.Debugf("Receiving peer infos: %v", resp)
 	for _, peerInfo := range resp.Peers {
 		ilog.Infof("receive peerid %v", peerInfo.Id)
+		pm.queryHistory[peerInfo.Id] = 1
 		if len(peerInfo.Addrs) > 0 {
 			pid, err := peer.IDB58Decode(peerInfo.Id)
 			if err != nil {
@@ -736,6 +736,7 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 			}
 		}
 	}
+	ilog.Infof("received len %d", len(pm.queryHistory))
 }
 
 // HandleMessage handles messages according to its type.
