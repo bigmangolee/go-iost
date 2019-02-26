@@ -479,6 +479,10 @@ func (pm *PeerManager) LoadRoutingTable() {
 			ilog.Infof("not public ma %v", line)
 			continue
 		}
+		if strings.Index(line, "30000") == -1 {
+			ilog.Infof("Ignore not 30000 port %v", line)
+			continue
+		}
 		peerID, addr, err := parseMultiaddr(line[:len(line)-1])
 		if err != nil {
 			ilog.Warnf("parse multiaddr failed. err=%v, str=%v", err, line)
