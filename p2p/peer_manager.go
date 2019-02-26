@@ -730,8 +730,8 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 			}
 			a := kbucket.ConvertPeerID(pm.host.ID())
 			b := kbucket.ConvertPeerID(pid)
-			fmt.Printf("%v, %b", a, a)
-			fmt.Printf("%v, %b", b, b)
+			ilog.Infof("%v, %b", a, a)
+			ilog.Infof("%v, %b", b, b)
 			l := keyspace.ZeroPrefixLen(util.XOR(a, b))
 			ilog.Infof("common prefix len %v, pid=%v", l, pid.Pretty())
 			if pm.isDead(pid) {
