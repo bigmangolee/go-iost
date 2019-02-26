@@ -93,6 +93,7 @@ type PeerManager struct {
 	rtMutex    sync.RWMutex
 
 	queryHistory map[string]int
+	qhRW         sync.RWMutex
 }
 
 // NewPeerManager returns a new instance of PeerManager struct.
@@ -707,7 +708,9 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 	ilog.Debugf("Receiving peer infos: %v", resp)
 	for _, peerInfo := range resp.Peers {
 		ilog.Infof("receive peerid %v", peerInfo.Id)
+		pm.qhRW.Lock()
 		pm.queryHistory[peerInfo.Id] = 1
+		pm.qhRW.Unlock()
 		if len(peerInfo.Addrs) > 0 {
 			pid, err := peer.IDB58Decode(peerInfo.Id)
 			if err != nil {
@@ -736,7 +739,9 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 			}
 		}
 	}
-	ilog.Infof("received len %d", len(pm.queryHistory))
+	pm.qhRW.RLock()
+	ilog.Infof("received len %d, routingSize:%d", len(pm.queryHistory), pm.routingTable.Size())
+	pm.qhRW.RUnlock()
 }
 
 // HandleMessage handles messages according to its type.
